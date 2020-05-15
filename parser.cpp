@@ -389,7 +389,7 @@ void Parser::where(Table & table) {
             table.where_type = 3;
             std::cout << table.where_str;
             table.where_poliz = poliz;
-            answer = poliz.print();
+            poliz.print();
             return;
         } 
     }
@@ -398,11 +398,11 @@ void Parser::where(Table & table) {
         str = str_2;
         c = c_2;
     }
-
+/*
     next();
     try {
         
-    }
+    }*/
 
 }
 

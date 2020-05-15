@@ -42,14 +42,17 @@ enum poliz_t {A, S, I, N, M, D, O};
 
 struct Item {
     enum poliz_t type;
+    virtual void apply();
 };
 
 struct NumItem: Item {
     int value;
+    virtual void apply();
 };
 
 struct TextItem: Item {
     std::string str;
+    virtual void apply();
 };
 
 class Poliz {
@@ -63,7 +66,7 @@ public:
     const Item* operator[](int index) const;
     void push(Item*);
     int get_size();
-    std::string print();
+    void print();
 };
 
 class Table {

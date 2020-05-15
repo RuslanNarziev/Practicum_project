@@ -1,6 +1,37 @@
 #include "table.h"
 //#include "re.h"
 
+void Item::apply() {
+    switch (type) {
+        case A:
+            std::cout << "+ ";
+            break;
+        case S:
+            std::cout << "- ";
+            break;
+        case M:
+            std::cout << "* ";
+            break;
+        case D:
+            std::cout << "/ ";
+            break;
+        case O:
+            std::cout << "% ";
+            break;
+    }
+}
+
+void NumItem::apply() {
+    if(type == N)
+        std::cout << std::to_string(value) + ' ';
+    else
+        std::cout << std::to_string(value) + "id ";
+}
+
+void TextItem::apply() {
+    std::cout << str;
+}
+
 Column_struct::Column_struct(int size) {
     columns = new Column[size];
     _size = size;
@@ -68,7 +99,7 @@ void Poliz::push(Item* item) {
         ++_size;
     } else {
         _size = 1;
-        ptr = new Item*;
+        ptr = ptr_2;
         *ptr = item;
     }
 }
@@ -77,34 +108,9 @@ int Poliz::get_size() {
     return _size;
 }
 
-std::string Poliz::print() {
-    std::string str;
-    for(int i = 0; i < _size; i++) {
-        switch (ptr[i]->type) {
-        case A:
-            str += "+ ";
-            break;
-        case S:
-            str += "- ";
-            break;
-        case M:
-            str += "* ";
-            break;
-        case D:
-            str += "/ ";
-            break;
-        case O:
-            str += "% ";
-            break;
-        case N:
-            str += std::to_string(ptr[i]->value) + ' ';
-            break;
-        case I:
-            str += std::to_string(ptr[i]->value) + "id ";
-            break;
-        }
-    }
-    return str;
+void Poliz::print() {
+    for(int i = 0; i < _size; i++)
+        ptr[i]->apply();
 }
 
 int Column_struct::field_id(std::string str) const {
