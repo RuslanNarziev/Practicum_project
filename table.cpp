@@ -8,12 +8,17 @@ Column_struct::Column_struct(int size) {
 
 Column_struct::Column_struct(const Column_struct & col) {
     _size = col._size;
-    std::cout << "2\n";
-    std::cout << "size" + std::to_string(_size);
     columns = new Column [_size];
-    std::cout << "2\n";
     for (int i = 0; i < _size; i++)
         columns[i] = col.columns[i];
+}
+
+Column_struct & Column_struct::operator=(const Column_struct & col) {
+    _size = col._size;
+    columns = new Column [_size];
+    for (int i = 0; i < _size; i++)
+        columns[i] = col.columns[i];
+    return *this;
 }
 
 Column_struct::~Column_struct() {
@@ -27,22 +32,33 @@ Column & Column_struct::operator[](int index) const {
 
 Poliz::Poliz(const Poliz & items) {
     _size = items._size;
-    ptr = new Item[_size];
-    for (int i = 0; i < _size; i++) 
-        ptr[i] = items.ptr[i];
+    ptr = new Item*[_size];
+    for (int i = 0; i < _size; i++)
+        ptr[i] = new Item(*(items[i]));
 }
 
 Poliz::~Poliz() {
-    if(_size)
+    if(_size) {
+        for (int i = 0; i < _size; i++)
+            delete ptr[i];
         delete [] ptr;
+    }
 }
 
-Item & Poliz::operator[](int index) const {
+const Item* Poliz::operator[](int index) const {
     return ptr[index];
 }
 
-void Poliz::push(Item item) {
-    Item* ptr_2 = new Item[_size + 1];
+Poliz & Poliz::operator=(const Poliz & items) {
+    _size = items._size;
+    ptr = new Item*[_size];
+    for (int i = 0; i < _size; i++)
+        ptr[i] = new Item(*(items[i]));
+    return *this;
+}
+
+void Poliz::push(Item* item) {
+    Item** ptr_2 = new Item*[_size + 1];
     if(_size)  {
         for(int i = 0; i < _size; i++)
             ptr_2[i] = ptr[i];
@@ -52,7 +68,8 @@ void Poliz::push(Item item) {
         ++_size;
     } else {
         _size = 1;
-        ptr = new Item(item);
+        ptr = new Item*;
+        *ptr = item;
     }
 }
 
@@ -63,7 +80,7 @@ int Poliz::get_size() {
 std::string Poliz::print() {
     std::string str;
     for(int i = 0; i < _size; i++) {
-        switch (ptr[i].type) {
+        switch (ptr[i]->type) {
         case A:
             str += "+ ";
             break;
@@ -80,10 +97,10 @@ std::string Poliz::print() {
             str += "% ";
             break;
         case N:
-            str += std::to_string(ptr[i].value) + ' ';
+            str += std::to_string(ptr[i]->value) + ' ';
             break;
         case I:
-            str += std::to_string(ptr[i].value) + "id ";
+            str += std::to_string(ptr[i]->value) + "id ";
             break;
         }
     }
