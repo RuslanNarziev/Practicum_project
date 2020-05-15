@@ -1,4 +1,105 @@
 #include "table.h"
+//#include "re.h"
+
+Column_struct::Column_struct(int size) {
+    columns = new Column[size];
+    _size = size;
+}
+
+Column_struct::Column_struct(const Column_struct & col) {
+    _size = col._size;
+    std::cout << "2\n";
+    std::cout << "size" + std::to_string(_size);
+    columns = new Column [_size];
+    std::cout << "2\n";
+    for (int i = 0; i < _size; i++)
+        columns[i] = col.columns[i];
+}
+
+Column_struct::~Column_struct() {
+    if(_size)
+        delete [] columns;
+}
+
+Column & Column_struct::operator[](int index) const {
+    return columns[index];
+}
+
+Poliz::Poliz(const Poliz & items) {
+    _size = items._size;
+    ptr = new Item[_size];
+    for (int i = 0; i < _size; i++) 
+        ptr[i] = items.ptr[i];
+}
+
+Poliz::~Poliz() {
+    if(_size)
+        delete [] ptr;
+}
+
+Item & Poliz::operator[](int index) const {
+    return ptr[index];
+}
+
+void Poliz::push(Item item) {
+    Item* ptr_2 = new Item[_size + 1];
+    if(_size)  {
+        for(int i = 0; i < _size; i++)
+            ptr_2[i] = ptr[i];
+        ptr_2[_size] = item;
+        delete [] ptr;
+        ptr = ptr_2;
+        ++_size;
+    } else {
+        _size = 1;
+        ptr = new Item(item);
+    }
+}
+
+int Poliz::get_size() {
+    return _size;
+}
+
+std::string Poliz::print() {
+    std::string str;
+    for(int i = 0; i < _size; i++) {
+        switch (ptr[i].type) {
+        case A:
+            str += "+ ";
+            break;
+        case S:
+            str += "- ";
+            break;
+        case M:
+            str += "* ";
+            break;
+        case D:
+            str += "/ ";
+            break;
+        case O:
+            str += "% ";
+            break;
+        case N:
+            str += std::to_string(ptr[i].value) + ' ';
+            break;
+        case I:
+            str += std::to_string(ptr[i].value) + "id ";
+            break;
+        }
+    }
+    return str;
+}
+
+int Column_struct::field_id(std::string str) const {
+    int id = 0;
+    int i = 0;
+    while(!id && (i < _size)) {
+        if(str == columns[i].name)
+            id = i + 1;
+        i++;
+    }
+    return id;
+}
 
 std::string Table::next_word() {
     int c;
@@ -17,7 +118,7 @@ Table::Table(std::string _file) {
     file = _file;
     fd = fopen(_file.data(), "r");
     size = atoi(next_word().data());
-    columns = new Column[size];
+    columns = Column_struct(size);
     for (int i = 0; i < size; i++) {
         columns[i].name = next_word();
         word = next_word().data();
@@ -32,7 +133,6 @@ Table::Table(std::string _file) {
 }
 
 Table::~Table() {
-    //delete columns;
     fclose(fd);
 }
 
@@ -47,9 +147,10 @@ void Table::print() {
     }
 }
 
-int main() {
-    std::string str;
-    std::cin >> str;
-    Table A(str);
-    A.print();
+const Column_struct Table::get_struct() {
+    return columns;
+}
+
+int Table::get_size() {
+    return size;
 }
