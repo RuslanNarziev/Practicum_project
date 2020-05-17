@@ -1,57 +1,50 @@
 #include "table.h"
 //#include "re.h"
 
+int Poliz::count = 0;
+
 void Item::apply(std::vector<long> & stack, Record & record, std::string & string, std::string & string_2, bool & f) {
     long a, b;
-    std::cout << "|";
     a = stack.back();
     stack.pop_back();
     switch (type) {
         case A:
-            std::cout << "+";
             b = stack.back();
             stack.pop_back();
             stack.push_back(b + a);
             break;
         case S:
-            std::cout << "-";
             b = stack.back();
             stack.pop_back();
             stack.push_back(b - a);
             break;
         case M:
-            std::cout << "*";
             b = stack.back();
             stack.pop_back();
             stack.push_back(b * a);
             break;
         case D:
-            std::cout << "/";
             b = stack.back();
             stack.pop_back();
             stack.push_back(b / a);
             break;
         case O:
-            std::cout << "%";
             b = stack.back();
             stack.pop_back();
             stack.push_back(b % a);
             break;
         case NO:
-            std::cout << "NO";
             b = 1;
             if(a)
                 b = 0;
             stack.push_back(b);
             break;
         case AND:
-            std::cout << "&";
             b = stack.back();
             stack.pop_back();
             stack.push_back(a && b);
             break;
         case OR:
-            std::cout << "|";
             b = stack.back();
             stack.pop_back();
             stack.push_back(a || b);
@@ -60,10 +53,9 @@ void Item::apply(std::vector<long> & stack, Record & record, std::string & strin
 }
 
 void NumItem::apply(std::vector<long> & stack, Record & record, std::string & string, std::string & string_2, bool & f) {
-    std::cout << "|";
     if(type == N)
         stack.push_back(value);
-    else if(type = I)
+    else if(type == I)
         stack.push_back(atol(record[value].data()));
     else if(f) 
         string_2 = record[value];
@@ -71,24 +63,19 @@ void NumItem::apply(std::vector<long> & stack, Record & record, std::string & st
         f = true;
         string = record[value];
     }
-    std::cout << "id";   
 }
 
 void TextItem::apply(std::vector<long> & stack, Record & record, std::string & string, std::string & string_2, bool & f) {
-    std::cout << "|";
     if(f)
         string_2 = str;
     else {
         f = true;
         string = str;
     }
-    std::cout << "str";
 }
 
 void BoolItem::apply(std::vector<long> & stack, Record & record, std::string & string, std::string & string_2, bool & f) {
-    std::cout << "|";
     bool eq, l;
-    std::cout << "b";
     if(f) {
         eq = (string == string_2);
         l = (string < string_2);
@@ -138,8 +125,7 @@ Column & Column_struct::operator[](int index) const {
 }
 
 Poliz::Poliz(Poliz & items) {
-    items.free = false;
-    free = true;
+    count += 1;
     _size = items._size;
     ptr = new Item*[_size];
     for (int i = 0; i < _size; i++)
@@ -148,9 +134,10 @@ Poliz::Poliz(Poliz & items) {
 
 Poliz::~Poliz() {
     if(_size) {
-        if(free)
+        if(count == 1) {
             for (int i = 0; i < _size; i++)
                 delete ptr[i];
+        } count -= 1;
         delete [] ptr;
     }
 }
@@ -160,8 +147,7 @@ Item* Poliz::operator[](int index) const {
 }
 
 Poliz & Poliz::operator=(Poliz & items) {
-    items.free = false;
-    free = true;
+    count += 1;
     _size = items._size;
     ptr = new Item*[_size];
     for (int i = 0; i < _size; i++)

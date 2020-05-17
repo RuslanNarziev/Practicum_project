@@ -59,8 +59,8 @@ struct BoolItem : Item {
 class Poliz {
     Item** ptr;
     int _size;
-    bool free;
 public:
+    static int count;
     Poliz() {_size = 0;}
     Poliz(Poliz &);
     ~Poliz();

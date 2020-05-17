@@ -423,6 +423,7 @@ void Parser::where(Table & table) {
     B_E(columns, poliz); 
     if(cur_lex_type != END)
         throw std::string("Incorrect where-clause");
+    table.where_not = false;
     table.where_poliz = poliz;
     table.where_type = 4;
     return;   
@@ -455,12 +456,11 @@ void Parser::B_M(const Column_struct & columns, Poliz & poliz) {
 
 void Parser::B_F(const Column_struct & columns, Poliz & poliz) {
     bool no = false;
-    bool text;
+    bool text = false;
     while(cur_lex_text == "NOT") {
         no = !no;
         next();
     }
-
     if(cur_lex_text != "(")
         throw std::string("Incorrect where-clause: expected (");
     const char* str_2 = str;
@@ -488,7 +488,6 @@ void Parser::B_F(const Column_struct & columns, Poliz & poliz) {
         } 
         if(!text)
             L_E(columns, poliz);
-        
         BoolItem* item_ = new BoolItem;
         item_->type = B;
         if(cur_lex_text == "!") {
@@ -555,7 +554,6 @@ void Parser::B_F(const Column_struct & columns, Poliz & poliz) {
         poliz = poliz_2;
         B_E(columns, poliz);
     }
-
     if(no) {
         Item* item = new Item;
         item->type = NO;
