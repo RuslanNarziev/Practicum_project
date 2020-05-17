@@ -1,5 +1,7 @@
-#include <exception>
+#include <iostream>
 
 int main() {
-    std::terminate();
+    std::string a, b;
+    a = "s", b = "v";
+    std::cout << (a < b);
 }
