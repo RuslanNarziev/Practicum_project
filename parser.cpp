@@ -94,12 +94,6 @@ void Parser::next() {
             } else if(c == '\n') {
                 state = OK;
                 err = true;
-            } else if(c == '\\') {
-                c = *str++;
-                if((c == '\\') || (c == '\''))
-                    cur_lex_text += c;
-                else
-                    err = true;
             } else
                 cur_lex_text += c;
             break;     
@@ -305,7 +299,6 @@ void Parser::where(Table & table) {
     if(cur_lex_text == "ALL") {
         table.where_type = 0;
         table.where_not = false;
-        answer = "ALL";
         return;
     }
     try {
@@ -644,21 +637,21 @@ void Parser::update() {
     std::string name;
     next();
     if(cur_lex_type != ID)
-         throw std::string("Incorrect Delete-call: table's name should be identifier");   
+         throw std::string("Incorrect Update-call: table's name should be identifier");   
     name = cur_lex_text;
     next();
     if(cur_lex_text != "SET")
-        throw std::string("Incorrect Delete-call: expected \"FROM\" after \"DELETE\"");
+        throw std::string("Incorrect Update-call: expected \"FROM\" after \"DELETE\"");
     next();
     Table table(name);
     const Column_struct columns = table.get_struct();
     int id = columns.field_id(cur_lex_text);
     if(!id)
-        throw std::string("Incorrect Delete-call: no such field in table : ") + cur_lex_text;
+        throw std::string("Incorrect Update-call: no such field in table : ") + cur_lex_text;
     bool text = columns[id-1].type;
     next();
     if(cur_lex_text != "=")
-        throw std::string("Incorrect Delete-call: expected \'=\' ");
+        throw std::string("Incorrect Update-call: expected \'=\' ");
     next();
 
     int type;
@@ -679,6 +672,7 @@ void Parser::update() {
                 throw std::string("Incorrect Delete-call: expected text-field");
             type = 1;
         }
+        next();
     } else {
         L_E(columns, poliz);
         type = 2;
@@ -741,11 +735,11 @@ void Parser::select() {
 
 
 int main() {
-    //std::string str;
-    //std::getline(std::cin, str);
-    //str += '\n';
-    std::string str = "SELECT * FROM ASD WHERE (b < 'z') AND NOT (a =4) \n";
-    std::cout << str;
+    std::string str;
+    std::getline(std::cin, str);
+    str += '\n';
+    // std::string str = "SELECT b, a FROM ASD WHERE b LIKE 'f[a-s]%g'\n";
+    // std::cout << str;
     Parser A(str.data());
     std::cout << A.parse();
     return 0;

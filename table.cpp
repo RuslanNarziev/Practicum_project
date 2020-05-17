@@ -165,6 +165,7 @@ void Poliz::push(Item* item) {
         ptr = ptr_2;
         ++_size;
     } else {
+        count += 1;
         _size = 1;
         ptr = ptr_2;
         *ptr = item;
@@ -213,10 +214,7 @@ std::string Table::next_word(const char* & str) {
             break;
         
         case STR:
-            if(c == '\\') {
-                c = *str++;
-                word += c;
-            } else if(c == '\'')
+            if(c == '\'')
                 state = OK;
             else
                 word += c;
@@ -349,16 +347,9 @@ void Table::update(int type, std::string & str_field, int first_id, int second_i
                     else
                         fout << std::to_string(poliz.exec(record)) + ' ';
                 } 
-                else if(columns[i].type) {
-                    fout << '\'';
-                    for(int j = 0; j < record[i].size(); j++) {
-                        char c = record[i].data()[j];
-                        if((c == '\\') || (c =='\''))
-                            fout << '\\';
-                        fout << c;
-                    }
-                    fout << "\' ";
-                } else 
+                else if(columns[i].type)
+                    fout << '\'' << record[i] << "\' ";
+                else 
                     fout << record[i] + ' ';
             }
             fout << '\n';
@@ -470,6 +461,8 @@ bool Table::where_re(const char* sample, const char* value) {
                     state = BEG;
                 } else if(v == '\n')
                     state = OK;
+                else
+                    last_v += 1;
             }
             break;
 
