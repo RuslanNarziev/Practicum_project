@@ -80,9 +80,9 @@ void BoolItem::apply(std::vector<long> & stack, Record & record, std::string & s
         eq = (string == string_2);
         l = (string < string_2);
     } else {
-        long a = stack.back();
-        stack.pop_back();
         long b = stack.back();
+        stack.pop_back();
+        long a = stack.back();
         stack.pop_back();
         eq = (a == b);
         l = (a < b);
@@ -194,6 +194,7 @@ int Column_struct::field_id(std::string str) const {
             id = i + 1;
         i++;
     }
+    //std::cout << id << " ";
     return id;
 }
 

@@ -5,6 +5,8 @@
 enum lex_t {ID, NUM, OTHER, END, STR};
 
 class Parser {    
+    int open_count;
+    bool can_be_num;
     char c;
     enum lex_t cur_lex_type;
     std::string cur_lex_text;
@@ -18,11 +20,12 @@ class Parser {
     void insert();
     std::string value(const Column &, int);
     void where(Table & );
+    void in(bool text, Table & table);
     void delet();
     void update();
     void select();
     void L_E(const Column_struct & , Poliz &);
-    void L_M(const Column_struct & , Poliz &);
+    void L_M(const Column_struct & , Poliz &, bool);
     void L_F(const Column_struct & , Poliz &);
     void B_E(const Column_struct & , Poliz &);
     void B_M(const Column_struct & , Poliz &);
@@ -134,14 +137,14 @@ void Parser::create() {
     std::string header;
     next();
     if(cur_lex_text != "TABLE")
-        throw std::string("Incorrect Create-call");
+        throw std::string("Incorrect Create-call: expected \"TABLE\" after \"CREATE\"");
     next();
     if(cur_lex_type != ID)
-        throw std::string("Incorrect Create-call");
+        throw std::string("Incorrect Create-call: invalid table's name");
     name = cur_lex_text;
     next();
     if(cur_lex_text != "(")
-        throw std::string("Incorrect Create-call");
+        throw std::string("Incorrect Create-call: expected \'(\'");
     next();
     int size = 1;
     try {
@@ -293,7 +296,10 @@ std::string Parser::value(const Column & column, int i) {
 void Parser::where(Table & table) {
     const char* str_2 = str;
     char c_2 = c;
-    std::string ans;
+    int id;
+    bool _not = false;
+    Poliz poliz;
+    std::string str;
     const Column_struct columns = table.get_struct();
     next();
     if(cur_lex_text == "ALL") {
@@ -301,66 +307,12 @@ void Parser::where(Table & table) {
         table.where_not = false;
         return;
     }
-    try {
-        int id;
-        bool _not = false;
-        if(cur_lex_type != ID)
-            throw std::string("Incorrect where-clause");
-        if(!(id = columns.field_id(cur_lex_text)))
-            throw std::string("Incorrect where-clause: no such field in table");
-        if(!columns[id-1].type)
-            throw std::string("Incorrect where-clause: field ") + std::to_string(id) + " is not text";
-        next();
-        if(cur_lex_text == "NOT") {
-            next();
-            _not = true;
-        }
-        if(cur_lex_text != "LIKE")
-            throw std::string("Incorrect where-clause");
-        next();
-        if((cur_lex_type != STR) || err)
-            throw std::string("Incorrect where-clause");
-        table.where_str = cur_lex_text + '\n';
-        next();
-        if(cur_lex_type != END)
-            throw std::string("Incorrect where-clause");
-        table.where_not = _not;
-        table.where_type = 1;
-        table.where_id = id - 1;
-        return;
-    }
-    catch(std::string st) {
-        ans = st;
-        str = str_2;
-        c = c_2;
-    }
 
-    next();
-    try {
-        int id;
-        bool _not = false;
+    if((cur_lex_type == STR)) {
         bool str_in = false;
-        bool text = false;
-        Poliz poliz;
-        std::string str;
-        if((cur_lex_type == STR)) {
-            table.where_type = 0;
-            text = true;
-            str_in = true;
-            str = cur_lex_text;
-        } else {
-            id = columns.field_id(cur_lex_text);
-            if(id && (columns[id-1].type)) {
-               text = true; 
-               table.where_type = 2;
-            }
-        }
-        if(!text) {
-            L_E(columns, poliz);
-            table.where_type = 3;
-        }
-        else 
-            next();
+        table.where_type = 0;
+        str = cur_lex_text;
+        next();
         if(cur_lex_text == "NOT") {
             next();
             _not = true;
@@ -369,27 +321,15 @@ void Parser::where(Table & table) {
             throw std::string("Incorrect where-clause: expected IN");
         next();
         if(cur_lex_text != "(")
-            throw std::string("Incorrect where-clause: expected (");
+            throw std::string("Incorrect where-clause: expected ( after \"IN\"");
         next();
-        if((text && (cur_lex_type != STR)) || (!text && (cur_lex_type != NUM)))
-            throw std::string("Incorrect where-clause: invalid type");
-        if(str_in && (cur_lex_text == str))
-            str_in = false;
-        if(text)
-            table.where_str = '\'' + cur_lex_text + "\' ";
-        else
-            table.where_str = cur_lex_text + ' ';
-        table.where_count = 1;
+        str_in = (cur_lex_text == str);
         next();
         while(cur_lex_text == ",") {
             next();
-            if((text && (cur_lex_type != STR)) || (!text && (cur_lex_type != NUM)))
-                throw std::string("Incorrect where-clause: invalid type");
-            if(text)
-                table.where_str = '\'' + cur_lex_text + "\' ";
-            else
-                table.where_str = cur_lex_text + ' ';
-            table.where_count += 1;
+            if(cur_lex_type != STR)
+                throw std::string("Incorrect where-clause: expected string");
+            str_in = (cur_lex_text == str) || str_in;
             next();
         }
         if(cur_lex_text != ")")
@@ -397,38 +337,112 @@ void Parser::where(Table & table) {
         next();
         if(cur_lex_type != END)
             throw std::string("Incorrect where-clause");
-        table.where_not = _not ^ str_in;
-        if(text && id)
-                table.where_id = id - 1;
-        else {
-            table.where_type = 3;
-            table.where_poliz = poliz;
-        } 
+        table.where_not = _not ^ !str_in;
         return;
     }
-    catch(std::string st) {
-        ans = st;
-        str = str_2;
-        c = c_2;
+
+    id = columns.field_id(cur_lex_text);
+    if(id && columns[id-1].type) {
+        next();
+        if(cur_lex_text == "NOT") {
+            next();
+            _not = true;
+        }
+        table.where_not = _not;
+        table.where_id = id - 1;
+        if(cur_lex_text == "LIKE") {
+            next();
+            if((cur_lex_type != STR) || err)
+                throw std::string("Incorrect where-clause");
+            table.where_str = cur_lex_text + '\n';
+            next();
+            if(cur_lex_type != END)
+                throw std::string("Incorrect where-clause");
+            table.where_type = 1;
+            return;
+        } else if(cur_lex_text == "IN") {
+            table.where_type = 2;
+            next();
+            in(true, table);
+            return;
+        } else
+            throw std::string("Incorrect where-clause: expected \"LIKE\" or \"IN\"");
     }
+
+    open_count = 0;
+    can_be_num = true;    
+    if((cur_lex_type == NUM) || (id = columns.field_id(cur_lex_text)) && !columns[id-1].type) {
+        L_E(columns, poliz);
+    } else {
+        B_E(columns, poliz);
+    }
+    if(can_be_num) {
+        table.where_type = 3;
+        if(cur_lex_text == "NOT") {
+            next();
+            _not = true;
+        }
+        if(cur_lex_text != "IN")
+            throw std::string("Incorrect where-clause: expected IN");
+        next();
+        table.where_type = 3;
+        table.where_poliz = poliz;
+        table.where_not = _not;
+        in(false, table);
+        return;
+    } else {
+        if(cur_lex_type != END)
+            throw std::string("Incorrect where-clause");
+        table.where_not = false;
+        table.where_poliz = poliz;
+        table.where_type = 4;
+        return;   
+    }
+}
+
+void Parser::in(bool text, Table & table) {
+    if(cur_lex_text != "(")
+        throw std::string("Incorrect where-clause: expected (");
     next();
-    Poliz poliz;
-    B_E(columns, poliz); 
+    if((text && (cur_lex_type != STR)) || (!text && (cur_lex_type != NUM)))
+        throw std::string("Incorrect where-clause: invalid type");
+    if(text)
+        table.where_str = '\'' + cur_lex_text + "\' ";
+    else
+        table.where_str = cur_lex_text + ' ';
+    table.where_count = 1;
+    next();
+    while(cur_lex_text == ",") {
+        next();
+        if((text && (cur_lex_type != STR)) || (!text && (cur_lex_type != NUM)))
+            throw std::string("Incorrect where-clause: invalid type");
+        if(text)
+            table.where_str = '\'' + cur_lex_text + "\' ";
+        else
+            table.where_str += cur_lex_text + ' ';
+        table.where_count += 1;
+        next();
+    }
+    if(cur_lex_text != ")")
+        throw std::string("Incorrect where-clause: expected )");
+    next();
     if(cur_lex_type != END)
         throw std::string("Incorrect where-clause");
-    table.where_not = false;
-    table.where_poliz = poliz;
-    table.where_type = 4;
-    return;   
-    
+    return;
 }
 
 void Parser::B_E(const Column_struct & columns, Poliz & poliz) {
+    int count = open_count;
     B_M(columns, poliz);
+    if(open_count && (open_count != (count + 1)))
+        return;
     Item* item;
     while (cur_lex_text == "OR") {
         next();
+        count = open_count;
         B_M(columns, poliz);
+        if(open_count && (open_count != (count + 1)))
+            return;
         item = new Item;
         item->type = OR;
         poliz.push(item);
@@ -436,51 +450,70 @@ void Parser::B_E(const Column_struct & columns, Poliz & poliz) {
 }
 
 void Parser::B_M(const Column_struct & columns, Poliz & poliz) {
+    int count = open_count;
     B_F(columns, poliz);
+    if(open_count && (open_count != (count + 1)))
+        return;
+    open_count = 0;
     Item* item;
     while (cur_lex_text == "AND") {
+        next();
+        count = open_count;
+        B_F(columns, poliz);
+        if(open_count && (open_count != (count + 1)))
+            return;
+        open_count = 0;
         item = new Item;
         item->type = AND;
-        next();
-        B_F(columns, poliz);
         poliz.push(item);
     }
 }
 
 void Parser::B_F(const Column_struct & columns, Poliz & poliz) {
+    bool text;
     bool no = false;
-    bool text = false;
+    int id;
     while(cur_lex_text == "NOT") {
         no = !no;
         next();
     }
     if(cur_lex_text != "(")
-        throw std::string("Incorrect where-clause: expected (");
-    const char* str_2 = str;
-    char c_2 = c;
-    Poliz poliz_2 = poliz;
+        throw std::string("Incorrect where-clause: expected ( after \"IN\"");
     next();
-    try {
-        if (cur_lex_type == STR) {
-            text = true;
+    
+    open_count += 1;
+    int count = open_count;
+    if((cur_lex_type == NUM) || (cur_lex_type == STR) || (id = columns.field_id(cur_lex_text))) {
+        int count = open_count;
+        if(cur_lex_type == STR) {
             TextItem* item = new TextItem;
             item->type = ST;
             item->str = cur_lex_text;
             poliz.push(item);
             next();
+            text = true;
+        } else if((cur_lex_type == ID) && columns[id-1].type) {
+            text = true;
+            NumItem* item = new NumItem;
+            item->type = T;
+            item->value = id - 1;
+            poliz.push(item);
+            next();
         } else {
-            int id = columns.field_id(cur_lex_text);
-            if(id && columns[id-1].type) {
-                text = true;
-                NumItem* item = new NumItem;
-                item->type = T;
-                item->value = id - 1;
-                poliz.push(item);
-                next();
-            }
-        } 
-        if(!text)
+            text = false;
+            int temp = open_count;
             L_E(columns, poliz);
+            open_count = temp - open_count;
+            std::cout << open_count;
+            if(!open_count)
+                if(can_be_num){
+                    open_count = count + 1;
+                    return;
+                } else 
+                    throw std::string("Incorrect where-clause: expected comparison operation");
+        }
+
+        can_be_num = false;
         BoolItem* item_ = new BoolItem;
         item_->type = B;
         if(cur_lex_text == "!") {
@@ -527,43 +560,44 @@ void Parser::B_F(const Column_struct & columns, Poliz & poliz) {
             } else {
                 int id = columns.field_id(cur_lex_text);
                 if(!id || !columns[id-1].type)
-                    throw std::string("Incorrect where_clause: expected text-field");
+                    throw std::string("Incorrect where-clause: expected text-field");
                 NumItem* item = new NumItem;
                 item->type = I;
                 item->value = id - 1;
                 poliz.push(item);
                 next();
             }
-            poliz.push(item_);
         } else {
+            int temp = open_count;
+            open_count = 0;
             L_E(columns, poliz);
-            poliz.push(item_);
+            open_count = temp;
         }
-    }
-    catch(std::string) {
-        c = c_2;
-        str = str_2;
-        next();
-        poliz = poliz_2;
+        poliz.push(item_);
+    } 
+    else {
         B_E(columns, poliz);
     }
-    if(no) {
-        Item* item = new Item;
-        item->type = NO;
-        poliz.push(item);
-    }
-    if (cur_lex_text != ")")
-        throw std::string("Incorrect where_clause: expected )");
+
+    if(count != open_count)
+        return;
+    else
+        --open_count;
+    if(cur_lex_text != ")")
+        throw std::string("Incorrect where-clause: expected (");
     next();
 }
 
 void Parser::L_E(const Column_struct & columns, Poliz & poliz) {
-    L_M(columns, poliz);
+    int count = open_count;
+    L_M(columns, poliz, count);
+    if(open_count != count)
+        return;
     bool pl;
     Item* item;
     while ((pl = (cur_lex_text == "+")) || (cur_lex_text == "-")) {
         next();
-        L_M(columns, poliz);
+        L_M(columns, poliz, false);
         item = new Item;
         if(pl)
             item->type = A;
@@ -573,8 +607,18 @@ void Parser::L_E(const Column_struct & columns, Poliz & poliz) {
     }
 }
 
-void Parser::L_M(const Column_struct & columns, Poliz & poliz) {
-    L_F(columns, poliz);
+void Parser::L_M(const Column_struct & columns, Poliz & poliz, bool lot) {
+    int count = open_count;
+    if(open_count && lot) {
+        open_count--;
+        L_E(columns, poliz);
+        if(cur_lex_text == ")") {
+            open_count++;
+            next();
+        } if(open_count != count)
+            return;
+    } else
+        L_F(columns, poliz);
     Item* item;
     while ((cur_lex_text == "*") || (cur_lex_text == "/") || (cur_lex_text == "%")) {
         item = new Item;
@@ -595,7 +639,7 @@ void Parser::L_F(const Column_struct & columns, Poliz & poliz) {
         next();
         L_E(columns, poliz);
         if (cur_lex_text != ")")
-            throw std::string("Incorrect where_clause: expected )");
+            throw std::string("Incorrect where-clause: expected )");
         next();
     } else if (cur_lex_type == NUM) {
         NumItem* item = new NumItem;
@@ -641,7 +685,7 @@ void Parser::update() {
     name = cur_lex_text;
     next();
     if(cur_lex_text != "SET")
-        throw std::string("Incorrect Update-call: expected \"FROM\" after \"DELETE\"");
+        throw std::string("Incorrect Update-call: expected \"SET\"");
     next();
     Table table(name);
     const Column_struct columns = table.get_struct();
@@ -714,7 +758,7 @@ void Parser::select() {
     name = cur_lex_text;
     next();
     if(cur_lex_text != "WHERE")
-        throw std::string("Incorrect Select-call: expected \"FROM\" after \"DELETE\"");
+        throw std::string("Incorrect Select-call: expected \"WHERE\"");
     Table table(name);
     const Column_struct columns = table.get_struct();
     std::vector<int> id_s;
@@ -735,11 +779,11 @@ void Parser::select() {
 
 
 int main() {
-    std::string str;
-    std::getline(std::cin, str);
-    str += '\n';
-    // std::string str = "SELECT b, a FROM ASD WHERE b LIKE 'f[a-s]%g'\n";
-    // std::cout << str;
+    // std::string str;
+    // std::getline(std::cin, str);
+    // str += '\n';
+    std::string str = "SELECT * FROM ASD WHERE ((5 + 6) / (a-5)) IN (3)\n";
+    std::cout << str;
     Parser A(str.data());
     std::cout << A.parse();
     return 0;
