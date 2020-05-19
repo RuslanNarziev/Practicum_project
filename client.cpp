@@ -1,6 +1,5 @@
 #include "sock_wrap.h"
 using namespace SQL_Sockets;
-using namespace Parser;
 
 int main() {
     const char* address = "mysocket"
@@ -11,11 +10,11 @@ int main() {
         bool end = false;
         while(!end) {
             std::cin >> comand;
-            if(comand == "end")
+            comand += '\n';
+            if(comand == "EXIT")
                 end = true;
-            else {
-                sock.putstring(comand);
-                std::cout << sock.getstring();
+            sock.putstring(comand, sock.getdescr());
+            std::cout << sock.getstring(sock.getdescr());
             } 
         }
     } 

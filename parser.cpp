@@ -5,6 +5,7 @@
 enum lex_t {ID, NUM, OTHER, END, STR};
 
 class Parser {    
+    int should_be_closed;
     int open_count;
     bool can_be_num;
     char c;
@@ -25,7 +26,7 @@ class Parser {
     void update();
     void select();
     void L_E(const Column_struct & , Poliz &);
-    void L_M(const Column_struct & , Poliz &, bool);
+    void L_M(const Column_struct & , Poliz &);
     void L_F(const Column_struct & , Poliz &);
     void B_E(const Column_struct & , Poliz &);
     void B_M(const Column_struct & , Poliz &);
@@ -370,6 +371,7 @@ void Parser::where(Table & table) {
     }
 
     open_count = 0;
+    should_be_closed = 0;
     can_be_num = true;    
     if((cur_lex_type == NUM) || (id = columns.field_id(cur_lex_text)) && !columns[id-1].type) {
         L_E(columns, poliz);
@@ -432,17 +434,16 @@ void Parser::in(bool text, Table & table) {
 }
 
 void Parser::B_E(const Column_struct & columns, Poliz & poliz) {
-    int count = open_count;
     B_M(columns, poliz);
-    if(open_count && (open_count != (count + 1)))
+    if(should_be_closed) {
+        --should_be_closed;
         return;
+    }
     Item* item;
     while (cur_lex_text == "OR") {
         next();
-        count = open_count;
+        open_count = 0;
         B_M(columns, poliz);
-        if(open_count && (open_count != (count + 1)))
-            return;
         item = new Item;
         item->type = OR;
         poliz.push(item);
@@ -450,19 +451,14 @@ void Parser::B_E(const Column_struct & columns, Poliz & poliz) {
 }
 
 void Parser::B_M(const Column_struct & columns, Poliz & poliz) {
-    int count = open_count;
     B_F(columns, poliz);
-    if(open_count && (open_count != (count + 1)))
+    if(should_be_closed)
         return;
-    open_count = 0;
     Item* item;
     while (cur_lex_text == "AND") {
         next();
-        count = open_count;
-        B_F(columns, poliz);
-        if(open_count && (open_count != (count + 1)))
-            return;
         open_count = 0;
+        B_F(columns, poliz);
         item = new Item;
         item->type = AND;
         poliz.push(item);
@@ -480,7 +476,6 @@ void Parser::B_F(const Column_struct & columns, Poliz & poliz) {
     if(cur_lex_text != "(")
         throw std::string("Incorrect where-clause: expected ( after \"IN\"");
     next();
-    
     open_count += 1;
     int count = open_count;
     if((cur_lex_type == NUM) || (cur_lex_type == STR) || (id = columns.field_id(cur_lex_text))) {
@@ -503,16 +498,16 @@ void Parser::B_F(const Column_struct & columns, Poliz & poliz) {
             text = false;
             int temp = open_count;
             L_E(columns, poliz);
-            open_count = temp - open_count;
-            std::cout << open_count;
-            if(!open_count)
-                if(can_be_num){
-                    open_count = count + 1;
+            should_be_closed = open_count;
+            if(temp == open_count)
+                if(can_be_num)
                     return;
-                } else 
+                else
                     throw std::string("Incorrect where-clause: expected comparison operation");
+            if(temp < open_count)
+                throw std::string("Incorrect where-clause: unexpected symbol \')\'");
         }
-
+        open_count = 0;
         can_be_num = false;
         BoolItem* item_ = new BoolItem;
         item_->type = B;
@@ -549,7 +544,7 @@ void Parser::B_F(const Column_struct & columns, Poliz & poliz) {
                 item_->equal = false;
         } else
             throw std::string();
-
+        
         if(text) {
             if(cur_lex_type == STR) {
                 TextItem* item = new TextItem;
@@ -568,36 +563,39 @@ void Parser::B_F(const Column_struct & columns, Poliz & poliz) {
                 next();
             }
         } else {
-            int temp = open_count;
-            open_count = 0;
             L_E(columns, poliz);
-            open_count = temp;
         }
         poliz.push(item_);
     } 
     else {
         B_E(columns, poliz);
     }
-
-    if(count != open_count)
+    if(should_be_closed)
         return;
-    else
-        --open_count;
+    --open_count;
     if(cur_lex_text != ")")
-        throw std::string("Incorrect where-clause: expected (");
+        throw std::string("Incorrect where-clause: expected )");
+    if(no) {
+        Item* item = new Item;
+        item->type = NO;
+        poliz.push(item);
+    }
     next();
 }
 
 void Parser::L_E(const Column_struct & columns, Poliz & poliz) {
     int count = open_count;
-    L_M(columns, poliz, count);
+    L_M(columns, poliz);
     if(open_count != count)
         return;
     bool pl;
     Item* item;
     while ((pl = (cur_lex_text == "+")) || (cur_lex_text == "-")) {
         next();
-        L_M(columns, poliz, false);
+        int temp = open_count;
+        open_count = 0;
+        L_M(columns, poliz);
+        open_count = temp;
         item = new Item;
         if(pl)
             item->type = A;
@@ -605,11 +603,15 @@ void Parser::L_E(const Column_struct & columns, Poliz & poliz) {
             item->type = S;
         poliz.push(item);
     }
+    if(count && (cur_lex_text == ")")) {
+        open_count++;
+        next();
+    }
 }
 
-void Parser::L_M(const Column_struct & columns, Poliz & poliz, bool lot) {
+void Parser::L_M(const Column_struct & columns, Poliz & poliz) {
     int count = open_count;
-    if(open_count && lot) {
+    if(open_count) {
         open_count--;
         L_E(columns, poliz);
         if(cur_lex_text == ")") {
@@ -617,8 +619,10 @@ void Parser::L_M(const Column_struct & columns, Poliz & poliz, bool lot) {
             next();
         } if(open_count != count)
             return;
-    } else
+    } else {
         L_F(columns, poliz);
+
+    }
     Item* item;
     while ((cur_lex_text == "*") || (cur_lex_text == "/") || (cur_lex_text == "%")) {
         item = new Item;
@@ -629,7 +633,10 @@ void Parser::L_M(const Column_struct & columns, Poliz & poliz, bool lot) {
         else
             item->type = O;
         next();
+        int temp = open_count;
+        open_count = 0;
         L_F(columns, poliz);
+        open_count = temp;
         poliz.push(item);
     }
 }
@@ -637,7 +644,10 @@ void Parser::L_M(const Column_struct & columns, Poliz & poliz, bool lot) {
 void Parser::L_F(const Column_struct & columns, Poliz & poliz) {
     if (cur_lex_text == "(") {
         next();
+        int temp = open_count;
+        open_count = 0;
         L_E(columns, poliz);
+        open_count = temp;
         if (cur_lex_text != ")")
             throw std::string("Incorrect where-clause: expected )");
         next();
@@ -782,7 +792,7 @@ int main() {
     // std::string str;
     // std::getline(std::cin, str);
     // str += '\n';
-    std::string str = "SELECT * FROM ASD WHERE ((5 + 6) / (a-5)) IN (3)\n";
+    std::string str = "UPDATE ASD FROM ASD WHERE NOT((a = 4) AND (a = 11))\n";
     std::cout << str;
     Parser A(str.data());
     std::cout << A.parse();

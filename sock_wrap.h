@@ -9,45 +9,35 @@
 #include <netinet/in.h>
 #include <netdb.h>
 namespace SQL_Sockets {
-    enum exc_type {cl_sock, cl_con};
+    enum exc_type {CL_SOCK, CL_CON, SEND, RECV, SV_SOCK, SV_BIND, SV_LIST, SV_ACC};
     class Exception { 
         enum exc_type type;
     public: 
-        Exception (enum exc_type _type) : type(_type) {} 
-        void report ();
-        std::string GetMessage();
+        Exception(enum exc_type _type) : type(_type) {} 
+        void report();
     };
 
     class BaseSocket {
     protected:
         int desc;
         struct sockaddr_un addr;
+        int getchar(int d);
     public:
-        //explicit BaseSocket (int sd = −1, SocketAddress * pAddr = NULL): m_Socket(sd), m_pAddr(pAddr) {}
-        virtual ~ BaseSocket();
-        void Write(void * buf, int len);
-        void putstring(const std::string& s)
-        int Read (void * buf, int len);
-        std::string getstring();
-        int GetSockDescriptor();
+        void putstring(std::string& s, int d);
+        std::string getstring(int d);
+        int getdescr();
     };
-    // ClientSocket --- базовый класс для клиентских сокетов
+
     class ClientSocket: public BaseSocket {
-        const char
     public: 
         ClientSocket(const char* address);
         void connect();
     };
-    // ServerSocket --- базовый класс для серверных сокетов
+
     class ServerSocket: public BaseSocket {
+        int d_cl;
+        ServerSocket(const char * Address);
     public:
         BaseSocket * Accept();
-    protected:
-        ServerSocket(const char * Address);
-        void bind();
-        void listen(int BackLog);
-        virtual void OnAccept (BaseSocket * pConn) {}
-    };
-
-}; // конец namespace ModelSQL
+};
 #endif
