@@ -1,10 +1,12 @@
 #include "sock_wrap.h"
-using namespace ModelSQL;
+using namespace SQL_Sockets;
 
 int main() {
     const char* address = "mysocket";
+    ServerSocket sock;
     try { 
-        ServerSocket sock(address);
+        sock = ServerSocket(address);
+        std::cout << 2222 <<std::endl;
     } 
     catch (Exception & err) {
         err.report();
@@ -13,11 +15,11 @@ int main() {
     bool end = false;
     while(!end) {
         std::string str;
-        str << sock.getstring(sock.getdescr());
+        str = sock.getstring(sock.getdescr());
         if(str == "END")
             end = true;
-        std::string ans;
-        sock.putstring(and, sock.getdescr())
+        std::string ans = "OK\n";
+        sock.putstring(ans, sock.getdescr());
     }
     return 0;
 }

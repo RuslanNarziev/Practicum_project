@@ -2,12 +2,12 @@
 #define __SOCK_WRAP_H__
 #include <string>
 #include <iostream>
-#include <io.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <unistd.h>
 namespace SQL_Sockets {
     enum exc_type {CL_SOCK, CL_CON, SEND, RECV, SV_SOCK, SV_BIND, SV_LIST, SV_ACC};
     class Exception { 
@@ -36,8 +36,10 @@ namespace SQL_Sockets {
 
     class ServerSocket: public BaseSocket {
         int d_cl;
-        ServerSocket(const char * Address);
     public:
         BaseSocket * Accept();
-};
+        ServerSocket(const char * Address);
+        ServerSocket() {}
+    };
+}
 #endif

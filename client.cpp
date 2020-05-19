@@ -2,7 +2,7 @@
 using namespace SQL_Sockets;
 
 int main() {
-    const char* address = "mysocket"
+    const char* address = "mysocket";
     std::string comand;
     try {
         ClientSocket sock(address);
@@ -15,7 +15,6 @@ int main() {
                 end = true;
             sock.putstring(comand, sock.getdescr());
             std::cout << sock.getstring(sock.getdescr());
-            } 
         }
     } 
     catch (Exception & err) {
