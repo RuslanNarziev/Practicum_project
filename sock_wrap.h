@@ -21,7 +21,7 @@ namespace SQL_Sockets {
     protected:
         int desc;
         struct sockaddr_un addr;
-        int getchar(int d);
+        char getchar(int d);
     public:
         void putstring(std::string& s, int d);
         std::string getstring(int d);
@@ -35,9 +35,8 @@ namespace SQL_Sockets {
     };
 
     class ServerSocket: public BaseSocket {
-        int d_cl;
     public:
-        BaseSocket * Accept();
+        int accept();
         ServerSocket(const char * Address);
         ServerSocket() {}
     };

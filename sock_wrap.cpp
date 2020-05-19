@@ -10,9 +10,8 @@ ClientSocket::ClientSocket(const char* address) {
 }
 
 void ClientSocket::connect() {
-    struct sockaddr_un sa;
-    int len = sizeof ( sa.sun_family) + strlen ( sa.sun_path); 
-    if(::connect(desc, (struct sockaddr *)&sa, len) < 0 ) { 
+    int len = sizeof ( addr.sun_family) + strlen ( addr.sun_path); 
+    if(::connect(desc, (struct sockaddr *)&addr, len) < 0 ) { 
         throw Exception(CL_CON);
     }
 }
@@ -22,21 +21,22 @@ void BaseSocket::putstring(std::string & str, int d) {
         throw Exception(Exception(SEND));
 }
 
-int BaseSocket::getchar(int d) {
-    int c = 0;
+char BaseSocket::getchar(int d) {
+    char c = 0;
     if(recv(d, &c, sizeof(char), 0) == -1)
         throw Exception(Exception(RECV));
     return c;
 }
 
 std::string BaseSocket::getstring(int d) {
-    int c = 0;
+    char c = 0;
     std::string answer;
     c = getchar(d);
-    while(c != '\n') {
-        answer += (char) c;
+    while((c != '\n') || (c == '\0')) {
+        answer += c;
         c = getchar(d);
     }
+    answer += '\n';
     return answer;
 }
 
@@ -46,7 +46,7 @@ int BaseSocket::getdescr() {
 
 ServerSocket::ServerSocket(const char* address) {
     struct sockaddr_un sa;
-    if((desc = socket (AF_UNIX, SOCK_STREAM, 0)) < 0)
+    if((desc = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
         throw Exception(SV_SOCK);
     sa.sun_family = AF_UNIX;
     strcpy (sa.sun_path, address);
@@ -56,9 +56,13 @@ ServerSocket::ServerSocket(const char* address) {
         throw Exception(SV_BIND);
     if (listen(desc, 5) < 0 )
         throw Exception(SV_LIST);
-    std::cout << 1111 <<std::endl;
-    if ((d_cl = accept(desc, 0, 0)) < 0)
+}
+
+int ServerSocket::accept() {
+    int d_cl;
+    if((d_cl = ::accept(desc, 0, 0)) < 0)
         throw Exception(SV_ACC);
+    return d_cl;
 }
 
 void Exception::report() {
