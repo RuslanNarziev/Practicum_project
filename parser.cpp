@@ -149,7 +149,7 @@ void Parser::create() {
 std::string Parser::field(std::vector<std::string> & names) {
     std::string ret;
     if(cur_lex_type != ID)
-        throw std::string("Incorrect : wrong field #");
+        throw std::string("Incorrect Create-call: wrong field #");
     for(int i = 0; i < names.size(); i++)
         if(names[i] == cur_lex_text)
             throw std::string("Incorrect Create-call: name \"" + cur_lex_text + "\" met twice - wrond field#");
@@ -161,18 +161,18 @@ std::string Parser::field(std::vector<std::string> & names) {
     else if(cur_lex_text == "TEXT") {
         next();
         if(cur_lex_text != "(")
-            throw std::string("Incorrect : wrong field #");
+            throw std::string("Incorrect Create-call: wrong field #");
         next();
         if(cur_lex_type != NUM)
-            throw std::string("Incorrect : wrong field #");
+            throw std::string("Incorrect Create-call: wrong field #");
         if(!atol(cur_lex_text.data()))
-            throw std::string("Incorrect : wrong field #");
+            throw std::string("Incorrect Create-call: wrong field #");
         else
             ret += "T" + std::to_string(atol(cur_lex_text.data())) + ' ';
         next();
         if(cur_lex_text != ")")
-            throw std::string("Incorrect : wrong field #");
-    } else throw std::string("Incorrect : wrong field #");
+            throw std::string("Incorrect Create-call: wrong field #");
+    } else throw std::string("Incorrect Create-call: wrong field #");
     next();
     return ret;
 }
@@ -181,7 +181,7 @@ void Parser::drop() {
     std::string name;
     next();
     if(cur_lex_text != "TABLE")
-        throw std::string("Incorrect Drop-call");
+        throw std::string("Incorrect Drop-call: expected \"TABLE\"");
     next();
     if(cur_lex_type != ID)
          throw std::string("Incorrect Drop-call: table's name should be identifier");   
@@ -206,14 +206,14 @@ void Parser::insert() {
     std::string val;
     next();
     if(cur_lex_text != "INTO")
-        throw std::string("Incorrect Insert-call");    
+        throw std::string("Incorrect Insert-call: expected \"INTO\"");    
     next();
     if(cur_lex_type != ID)
         throw std::string("Incorrect Insert-call: table's name should be identifier"); 
     name = cur_lex_text;
     next();
     if(cur_lex_text != "(")
-        throw std::string("Incorrect Insert-call");  
+        throw std::string("Incorrect Insert-call: expected \'(\'");  
     next(); 
 
     int i = 1;
@@ -226,21 +226,21 @@ void Parser::insert() {
     val = value(columns[0], 1);
     while(i < size) {
         if(cur_lex_text != ",")
-            throw std::string("Incorrect Insert-call");  
+            throw std::string("Incorrect Insert-call: expected \',\'");  
         next();
         val += value(columns[i], i + 1);
         i++;
     }
 
     if(cur_lex_text != ")")
-        throw std::string("Incorrect Insert-call");      
+        throw std::string("Incorrect Insert-call: expected \')\'");      
     next();
     if(cur_lex_type != END)
         throw std::string("Incorrect Insert-call");  
 
     FILE* fd = fopen(name.data(), "a");
-    val += "\n";
     fputs(val.data(), fd);
+    fflush(fd);
     answer = "Correct insert";
 }
 
@@ -289,7 +289,7 @@ void Parser::where(Table & table) {
             _not = true;
         }
         if(cur_lex_text != "IN")
-            throw std::string("Incorrect where-clause: expected IN");
+            throw std::string("Incorrect where-clause: expected \"IN\"");
         next();
         if(cur_lex_text != "(")
             throw std::string("Incorrect where-clause: expected ( after \"IN\"");
@@ -304,7 +304,7 @@ void Parser::where(Table & table) {
             next();
         }
         if(cur_lex_text != ")")
-            throw std::string("Incorrect where-clause: expected )");
+            throw std::string("Incorrect where-clause: expected \')\'");
         next();
         if(cur_lex_type != END)
             throw std::string("Incorrect where-clause");
@@ -324,7 +324,7 @@ void Parser::where(Table & table) {
         if(cur_lex_text == "LIKE") {
             next();
             if((cur_lex_type != STR) || err)
-                throw std::string("Incorrect where-clause");
+                throw std::string("Incorrect where-clause: expected string after\"LIKE\"");
             if(!can_be_regular(cur_lex_text))
                 throw std::string("Incorrect where-clause: this string is invalid");
             table.where_str = cur_lex_text + '\n';
@@ -782,16 +782,4 @@ bool Parser::can_be_regular(std::string str) {
         c = *s++;
     }
     return true;
-}
-
-
-int main() {
-    std::string str;
-    std::getline(std::cin, str);
-    str += '\n';
-    // std::string str = "UPDATE ASD FROM ASD WHERE NOT((a = 4) AND (a = 11))\n";
-    // std::cout << str;
-    Parser A(str.data());
-    std::cout << A.parse();
-    return 0;
 }

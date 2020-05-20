@@ -32,11 +32,10 @@ std::string BaseSocket::getstring(int d) {
     char c = 0;
     std::string answer;
     c = getchar(d);
-    while((c != '\n') || (c == '\0')) {
+    while(c != '\0') {
         answer += c;
         c = getchar(d);
     }
-    answer += '\n';
     return answer;
 }
 

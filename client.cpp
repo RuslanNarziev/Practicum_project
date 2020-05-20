@@ -9,10 +9,11 @@ int main() {
         sock.connect();
         bool end = false;
         while(!end) {
-            std::cin >> comand;
-            comand += '\n';
+            std::getline(std::cin, comand);
             if(comand == "EXIT")
                 end = true;
+            else
+                comand += '\n';
             sock.putstring(comand, sock.getdescr());
             std::cout << sock.getstring(sock.getdescr());
         }

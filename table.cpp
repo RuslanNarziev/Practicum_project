@@ -1,5 +1,4 @@
 #include "table.h"
-//#include "re.h"
 
 int Poliz::count = 0;
 

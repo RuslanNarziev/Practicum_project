@@ -16,19 +16,21 @@ int main() {
     }
     try {
         bool end = false;
+        std::string ans;
         while(!end) {
-            Parser A(str.data());
             std::string str;
             str = sock.getstring(client);
-            if(str == "END") {
+            Parser A(str.data());
+            if(str == "EXIT") {
                 end = true;
                 ans = "Work is done";
-            else
-                ans = A.parse();
+            } else
+                ans = A.parse() + '\n';
             sock.putstring(ans, client);
         }
     } catch(Exception & err) {
         err.report();
     }
+    unlink(address);
     return 0;
 }
