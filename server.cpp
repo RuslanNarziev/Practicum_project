@@ -1,4 +1,5 @@
 #include "sock_wrap.h"
+#include "parser.h"
 using namespace SQL_Sockets;
 
 int main() {
@@ -16,12 +17,14 @@ int main() {
     try {
         bool end = false;
         while(!end) {
+            Parser A(str.data());
             std::string str;
             str = sock.getstring(client);
-            std::cout << str ;
-            if(str == "END")
+            if(str == "END") {
                 end = true;
-            std::string ans = "OK\n";
+                ans = "Work is done";
+            else
+                ans = A.parse();
             sock.putstring(ans, client);
         }
     } catch(Exception & err) {

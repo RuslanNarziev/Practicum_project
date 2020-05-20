@@ -1,40 +1,4 @@
-#include <iostream>
-#include "table.h"
-#include <unistd.h>
-
-enum lex_t {ID, NUM, OTHER, END, STR};
-
-class Parser {    
-    int should_be_closed;
-    int open_count;
-    bool can_be_num;
-    char c;
-    enum lex_t cur_lex_type;
-    std::string cur_lex_text;
-    const char* str;
-    bool err;
-    void next();
-    std::string answer;
-    void create();
-    std::string field();
-    void drop();
-    void insert();
-    std::string value(const Column &, int);
-    void where(Table & );
-    void in(bool text, Table & table);
-    void delet();
-    void update();
-    void select();
-    void L_E(const Column_struct & , Poliz &);
-    void L_M(const Column_struct & , Poliz &);
-    void L_F(const Column_struct & , Poliz &);
-    void B_E(const Column_struct & , Poliz &);
-    void B_M(const Column_struct & , Poliz &);
-    void B_F(const Column_struct & , Poliz &);
-public:
-    Parser(const char* str_);
-    std::string parse();
-};
+#include "parser.h"
 
 Parser::Parser(const char* str_) {
     cur_lex_type = OTHER;
@@ -136,6 +100,7 @@ std::string Parser::parse() {
 void Parser::create() {
     std::string name;
     std::string header;
+    std::vector<std::string> names;
     next();
     if(cur_lex_text != "TABLE")
         throw std::string("Incorrect Create-call: expected \"TABLE\" after \"CREATE\"");
@@ -149,7 +114,7 @@ void Parser::create() {
     next();
     int size = 1;
     try {
-        header += field();
+        header += field(names);
     }
     catch(std::string ans) {
         throw ans + std::to_string(size);
@@ -158,7 +123,7 @@ void Parser::create() {
         next();
         size++;
         try {
-            header += field();
+            header += field(names);
         }
         catch(std::string ans) {
             throw ans + std::to_string(size);
@@ -169,7 +134,8 @@ void Parser::create() {
     next(); 
     if(cur_lex_type != END)
         throw std::string("Incorrect Create-call");
-    
+    if(fopen(name.data(), "r"))
+        throw std::string("Incorrect Create-call: such table exist");
     FILE* fd_w = fopen(name.data(), "w");
     if(fd_w != NULL) {
         header = std::to_string(size) + ' ' + header + '\n';
@@ -180,10 +146,14 @@ void Parser::create() {
         answer = "Database error: Table " + name + " is not created";
 }
 
-std::string Parser::field() {
+std::string Parser::field(std::vector<std::string> & names) {
     std::string ret;
     if(cur_lex_type != ID)
         throw std::string("Incorrect : wrong field #");
+    for(int i = 0; i < names.size(); i++)
+        if(names[i] == cur_lex_text)
+            throw std::string("Incorrect Create-call: name \"" + cur_lex_text + "\" met twice - wrond field#");
+    names.push_back(cur_lex_text);
     ret += cur_lex_text + ' ';
     next();
     if(cur_lex_text == "LONG")
@@ -355,6 +325,8 @@ void Parser::where(Table & table) {
             next();
             if((cur_lex_type != STR) || err)
                 throw std::string("Incorrect where-clause");
+            if(!can_be_regular(cur_lex_text))
+                throw std::string("Incorrect where-clause: this string is invalid");
             table.where_str = cur_lex_text + '\n';
             next();
             if(cur_lex_type != END)
@@ -787,13 +759,38 @@ void Parser::select() {
     table.select(answer, id_s);
 }
 
+bool Parser::can_be_regular(std::string str) {
+    str += '\n';
+    const char* s = str.data();
+    char c = *s++;
+    while(c != '\n') {
+        if(c == '[') {
+            c = *s++;
+            if(c == '\\')
+                c = *s++;
+            if(c == '\n')
+                return false;
+            c = *s++;
+            while(c != ']') {
+                if(c == '\\')
+                    c = *s++;
+                if(c == '\n')
+                    return false;
+                c = *s++;
+            }
+        }
+        c = *s++;
+    }
+    return true;
+}
+
 
 int main() {
-    // std::string str;
-    // std::getline(std::cin, str);
-    // str += '\n';
-    std::string str = "UPDATE ASD FROM ASD WHERE NOT((a = 4) AND (a = 11))\n";
-    std::cout << str;
+    std::string str;
+    std::getline(std::cin, str);
+    str += '\n';
+    // std::string str = "UPDATE ASD FROM ASD WHERE NOT((a = 4) AND (a = 11))\n";
+    // std::cout << str;
     Parser A(str.data());
     std::cout << A.parse();
     return 0;

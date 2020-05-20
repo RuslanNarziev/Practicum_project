@@ -26,11 +26,15 @@ void Item::apply(std::vector<long> & stack, Record & record, std::string & strin
         case D:
             b = stack.back();
             stack.pop_back();
+            if(a == 0)
+                throw 0;
             stack.push_back(b / a);
             break;
         case O:
             b = stack.back();
             stack.pop_back();
+            if(a == 0)
+                throw 0;
             stack.push_back(b % a);
             break;
         case NO:
@@ -194,7 +198,6 @@ int Column_struct::field_id(std::string str) const {
             id = i + 1;
         i++;
     }
-    //std::cout << id << " ";
     return id;
 }
 
@@ -236,7 +239,7 @@ Table::Table(std::string _file) {
     const char* word;
     file.open(_file, std::ios::in);
     if(!file.is_open())
-        throw std::string("Server Error: can't open the table");
+        throw std::string("Server Error: this table does not exist");
     std::getline(file, header);
     header += '\n';
     const char* str_ = header.data();
@@ -292,14 +295,24 @@ bool Table::where(Record & rec) {
         ret = false;
         where_str += '\n';
         str = where_str.data();
-        a = where_poliz.exec(rec);
+        try {
+            a = where_poliz.exec(rec);
+        }
+        catch(...) {
+            return false;
+        }
         while(!ret && (i < where_count)) {
             ret = (a == atol(next_word(str).data())); 
             i++;
         }
         break;
     case 4:
-        ret = where_poliz.exec(rec);
+        try {
+            ret = where_poliz.exec(rec);
+        }
+        catch(...) {
+            return false;
+        }
         break;
     }
     return ret ^ where_not;
@@ -345,8 +358,20 @@ void Table::update(int type, std::string & str_field, int first_id, int second_i
                         fout << str_field + ' ';
                     else if(type == 1)
                         fout << '\'' + record[second_id] + "\' ";
-                    else
-                        fout << std::to_string(poliz.exec(record)) + ' ';
+                    else {
+                        bool correct = true;
+                        long a;
+                        try {
+                            a = poliz.exec(record);
+                        }
+                        catch(...) {
+                            correct = false;
+                        }
+                        if(correct)
+                            fout << std::to_string(a) + ' ';
+                        else
+                            fout << record[i] + ' ';
+                    }
                 } 
                 else if(columns[i].type)
                     fout << '\'' << record[i] << "\' ";
@@ -425,6 +450,8 @@ bool Table::where_re(const char* sample, const char* value) {
                 state = IN;
                 c = *sample++;
             } else {
+                if(c == '\\')
+                    c = *sample++;
                 v = *value++;
                 if(v == c)
                     c = *sample++;
@@ -456,14 +483,19 @@ bool Table::where_re(const char* sample, const char* value) {
                 state = IN;
                 c = *sample++;
             } else {
+                if(c == '\\')
+                    c = *sample++;
                 v = *value++;
                 if(v == c) {
                     c = *sample++;
                     state = BEG;
                 } else if(v == '\n')
                     state = OK;
-                else
+                else {
                     last_v += 1;
+                    sample = last_s;
+                    c = *sample++;
+                }
             }
             break;
 
@@ -473,22 +505,28 @@ bool Table::where_re(const char* sample, const char* value) {
                 no = true;
                 c = *sample++;
             } 
+            if(c == '\\')
+                c = *sample++;
             a = c;
             c = *sample++;
             v = *value++;
             if(c == '-') {
                 c = *sample++;
+                if(c == '\\')
+                    c = *sample++;
                 here = ((v >= a) && (v <= c));
                 c = *sample++;
             } else {
                 here = (v == a);
                 while(c != ']') {
+                    if(c == '\\')
+                        c = *sample++;
                     here = here || (v == c);
                     c = *sample++;
                 }
             }
             c = *sample++;
-            if(here | no)
+            if(here ^ no)
                 state = BEG;
             else if(percent) {
                 sample = last_s;
