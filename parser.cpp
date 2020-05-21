@@ -238,6 +238,7 @@ void Parser::insert() {
     if(cur_lex_type != END)
         throw std::string("Incorrect Insert-call");  
 
+    val += '\n';
     FILE* fd = fopen(name.data(), "a");
     fputs(val.data(), fd);
     fflush(fd);

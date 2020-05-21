@@ -9,12 +9,6 @@ int main() {
     try { 
         sock = ServerSocket(address);
         client = sock.accept();
-    } 
-    catch (Exception & err) {
-        err.report();
-        unlink(address);
-    }
-    try {
         bool end = false;
         std::string ans;
         while(!end) {
@@ -30,6 +24,7 @@ int main() {
         }
     } catch(Exception & err) {
         err.report();
+        unlink(address);
     }
     unlink(address);
     return 0;

@@ -20,5 +20,3 @@ sock_wrap.o:
 clean:
 	rm -rf *.o test
 	rm -rf *.h.gch
-	rm clean
-	rm server
