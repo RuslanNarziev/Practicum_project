@@ -9,6 +9,7 @@ struct Column {
     bool type;
     int size;
     std::string name;
+    Column() {type = false;}
 };
 
 class Column_struct {

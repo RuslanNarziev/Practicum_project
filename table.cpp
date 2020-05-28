@@ -128,11 +128,13 @@ Column & Column_struct::operator[](int index) const {
 }
 
 Poliz::Poliz(Poliz & items) {
-    count += 1;
     _size = items._size;
+    if(_size) {
+        count += 1;
     ptr = new Item*[_size];
     for (int i = 0; i < _size; i++)
         ptr[i] = items[i];
+    }
 }
 
 Poliz::~Poliz() {
@@ -150,11 +152,17 @@ Item* Poliz::operator[](int index) const {
 }
 
 Poliz & Poliz::operator=(Poliz & items) {
-    count += 1;
-    _size = items._size;
-    ptr = new Item*[_size];
-    for (int i = 0; i < _size; i++)
-        ptr[i] = items[i];
+    if(_size) {
+        delete [] ptr;
+        count -= 1;
+    }
+    if(items._size) {
+        count += 1;
+        _size = items._size;
+        ptr = new Item*[_size];
+        for (int i = 0; i < _size; i++)
+            ptr[i] = items[i];
+    }
     return *this;
 }
 
@@ -242,11 +250,13 @@ Table::Table(std::string _file) {
     std::getline(file, header);
     header += '\n';
     const char* str_ = header.data();
-    size = atoi(next_word(str_).data());
+    std::string temp = next_word(str_);
+    size = atoi(temp.data());
     columns = Column_struct(size);
     for (int i = 0; i < size; i++) {
         columns[i].name = next_word(str_);
-        word = next_word(str_).data();
+        temp = next_word(str_);
+        word = temp.data();
         if(word[0] == 'T') {
             word += 1;
             columns[i].type = true;

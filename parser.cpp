@@ -545,7 +545,7 @@ void Parser::B_F(const Column_struct & columns, Poliz & poliz) {
     }
     if(should_be_closed)
         return;
-    --open_count;
+    open_count = 0;
     if(cur_lex_text != ")")
         throw std::string("Incorrect where-clause: expected )");
     if(no) {
