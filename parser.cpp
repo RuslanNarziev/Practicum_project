@@ -254,7 +254,7 @@ std::string Parser::value(const Column & column, int i) {
             ret = std::to_string(atol(cur_lex_text.data())) + ' '; 
     else if((cur_lex_type == STR) && !err)
         if(column.type) {
-            ret = '\'' + cur_lex_text + '\'';
+            ret = '\'' + cur_lex_text + "\' ";
             if(column.size < cur_lex_text.size())
                 throw std::string("Incorrect: argument #") + std::to_string(i) + " should be less";
         } else
@@ -295,13 +295,13 @@ void Parser::where(Table & table) {
         if(cur_lex_text != "(")
             throw std::string("Incorrect where-clause: expected ( after \"IN\"");
         next();
-        str_in = (cur_lex_text == str);
+        str_in = (cur_lex_type == STR);
         next();
         while(cur_lex_text == ",") {
             next();
             if(cur_lex_type != STR)
                 throw std::string("Incorrect where-clause: expected string");
-            str_in = (cur_lex_text == str) || str_in;
+            str_in = (cur_lex_type == STR) || str_in;
             next();
         }
         if(cur_lex_text != ")")

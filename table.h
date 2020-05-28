@@ -37,6 +37,7 @@ enum poliz_t {A, S, I, N, M, D, O, B, NO, ST, AND, OR, T};
 struct Item {
     enum poliz_t type;
     virtual void apply(std::vector<long> &, Record& , std::string& , std::string& , bool &);
+    virtual ~Item() = default;
 };
 
 struct NumItem: Item {
