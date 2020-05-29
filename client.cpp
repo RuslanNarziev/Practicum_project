@@ -14,6 +14,10 @@ int main() {
                 end = true;
             else
                 comand += '\n';
+            if(!std::cin) {
+            	end = true;
+            	comand = "EXIT";
+            }
             sock.putstring(comand, sock.getdescr());
             std::cout << sock.getstring(sock.getdescr());
         }
