@@ -18,5 +18,5 @@ sock_wrap.o:
 	$(CC) -c sock_wrap.cpp sock_wrap.h
 
 clean:
-	rm -rf *.o test
+	rm -rf *.o
 	rm -rf *.h.gch

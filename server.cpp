@@ -15,7 +15,7 @@ int main() {
             std::string str;
             str = sock.getstring(client);
             Parser A(str.data());
-            if(str == "EXIT") {
+            if(str == "EXIT\0") {
                 end = true;
                 ans = "Work is done";
             } else

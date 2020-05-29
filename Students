@@ -1,6 +1,5 @@
-4 First_name T10 Surname T15 Age L Phone T9
-'Sergey' 'Ivanov' 18 '145-45-45'
-'Alexey' 'Petrov' 20 '343-65-45'
-'Andrey' 'Fedorov' 23 '123-45-18'
-'Alexandre' 'Zaharov' 20 '345-33-33'
-
+4 First_name T10 Surname T15 Age L Phone T9 
+'Sergey' 'Ivanov' 19 '145-45-45' 
+'Alexey' 'Petrov' 21 '343-65-45' 
+'Andrey' 'Fedorov' 24 '123-45-18' 
+'Alexandre' 'Zaharov' 21 '345-33-33' 
