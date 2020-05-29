@@ -119,8 +119,9 @@ Column_struct & Column_struct::operator=(const Column_struct & col) {
 }
 
 Column_struct::~Column_struct() {
-    if(_size)
+    if(_size) {
         delete [] columns;
+    }
 }
 
 Column & Column_struct::operator[](int index) const {
@@ -140,8 +141,9 @@ Poliz::Poliz(Poliz & items) {
 Poliz::~Poliz() {
     if(_size) {
         if(count == 1) {
-            for (int i = 0; i < _size; i++)
+            for (int i = 0; i < _size; i++) {
                 delete ptr[i];
+            }
         } count -= 1;
         delete [] ptr;
     }

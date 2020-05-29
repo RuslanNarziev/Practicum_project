@@ -3,10 +3,10 @@ CC = g++
 all: client server
 
 server: sock_wrap.o parser.o table.o
-	$(CC) -o server sock_wrap.o table.o parser.o server.cpp
+	$(CC) -fsanitize=address,undefined -o server sock_wrap.o table.o parser.o server.cpp
 
 client: sock_wrap.o
-	$(CC) -o client sock_wrap.o client.cpp
+	$(CC) -fsanitize=address,undefined -o client sock_wrap.o client.cpp
 
 parser.o: table.o
 	$(CC) -c parser.cpp parser.h

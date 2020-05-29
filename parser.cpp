@@ -241,6 +241,7 @@ void Parser::insert() {
     val += '\n';
     FILE* fd = fopen(name.data(), "a");
     fputs(val.data(), fd);
+    fclose(fd);
     fflush(fd);
     answer = "Correct insert";
 }
@@ -693,10 +694,10 @@ void Parser::update() {
         else {
             second_id = columns.field_id(cur_lex_text);
             if(!second_id)
-                throw std::string("Incorrect Delete-call: no such field in table : ") + cur_lex_text;
+                throw std::string("Incorrect Update-call: no such field in table : ") + cur_lex_text;
             second_id -= 1;
             if(!columns[second_id].type)
-                throw std::string("Incorrect Delete-call: expected text-field");
+                throw std::string("Incorrect Update-call: expected text-field");
             type = 1;
         }
         next();
